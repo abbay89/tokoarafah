@@ -24,7 +24,7 @@ class CartItemTile extends StatelessWidget {
         title: Text(item.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
         subtitle: Text('${formatRupiah(item.price)}  x${item.qty}  =  ${formatRupiah(item.subtotal)}'),
         trailing: Row(
-          mainSize: MainSize.min,
+          mainAxisSize: MainAxisSize.min,
           children: [
             IconButton(
               icon: const Icon(Icons.remove, color: AppTheme.warn),
