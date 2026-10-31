@@ -20,8 +20,8 @@ jobs:
           channel: stable
       - run: |
           F=/opt/hostedtoolcache/flutter/stable-3.24.0-x64/flutter/packages/flutter_tools/gradle/src/main/groovy/flutter.groovy
-          sed -i '1i import groovy.xml.XmlParser' ""
-          sed -i '2i import groovy.xml.QName' ""
+          sed -i '1i import groovy.xml.XmlParser' "$F"
+          sed -i '2i import groovy.xml.QName' "$F"
       - run: flutter build apk --release
       - uses: actions/upload-artifact@v4
         with:
