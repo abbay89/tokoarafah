@@ -4,20 +4,6 @@ workflows:
 
     name: Android debug workflow
 
-    scripts:
-
-      - name: Set Android SDK location
-
-        script: |
-
-          echo "sdk.dir=$ANDROID_SDK_ROOT" > "$CM_BUILD_DIR/local.properties"          
-
-      - name: Build Android
-
-        script: |
-
-          ./gradlew assembleDebug          
-
     artifacts:
 
       - app/build/outputs/apk/debug/app-debug.apk
