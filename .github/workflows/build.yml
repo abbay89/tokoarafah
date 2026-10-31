@@ -11,23 +11,13 @@ jobs:
       - uses: actions/setup-java@v5
         with:
           distribution: temurin
-          java-version: '21'
+          java-version: '17'
       - uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.24.0'
           channel: stable
-      - run: cd flutter_app && flutter pub get
-      - run: cd flutter_app && flutter build apk --release
+      - run: cd android && ./gradlew assembleRelease
       - uses: actions/upload-artifact@v4
         with:
           name: tokasrafah-apk
-          path: flutter_app/build/app/outputs/flutter-apk/app-release.apk
-
-
-
-
-
-
-
-
-
+          path: android/app/build/outputs/flutter-apk/app-release.apk
