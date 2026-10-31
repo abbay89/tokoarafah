@@ -14,7 +14,7 @@ jobs:
           java-version: '17'
       - uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.22.0'
+          flutter-version: '3.19.0'
           channel: stable
       - run: cd flutter_app && flutter pub get
       - run: cd flutter_app && flutter build apk --release
@@ -22,6 +22,7 @@ jobs:
         with:
           name: tokasrafah-apk
           path: flutter_app/build/app/outputs/flutter-apk/app-release.apk
+
 
 
 
