@@ -18,6 +18,7 @@ jobs:
         with:
           flutter-version: '3.22.0'
           channel: stable
+      - run: sed -i '/import groovy.xml.QName/d' "/packages/flutter_tools/gradle/src/main/groovy/flutter.groovy"
       - run: flutter build apk --release
       - uses: actions/upload-artifact@v4
         with:
