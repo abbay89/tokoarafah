@@ -13,13 +13,15 @@ class Product {
     this.updatedAt,
   });
 
-  factory Product.fromJson(Map<String, dynamic> j) => Product(
-        barcode: j['barcode'] ?? '',
-        name: j['name'],
-        price: j['price'] is int ? j['price'] : (j['price'] == null ? null : int.tryParse(j['price'].toString())),
-        createdAt: j['created_at'],
-        updatedAt: j['updated_at'],
-      });
+  factory Product.fromJson(Map<String, dynamic> j) {
+    return Product(
+      barcode: (j['barcode'] ?? '').toString(),
+      name: j['name']?.toString(),
+      price: j['price'] is int ? j['price'] as int : (j['price'] == null ? null : int.tryParse(j['price'].toString())),
+      createdAt: j['created_at']?.toString(),
+      updatedAt: j['updated_at']?.toString(),
+    );
+  }
 
   Map<String, dynamic> toJson() => {
         'barcode': barcode,
