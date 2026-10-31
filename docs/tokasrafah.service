@@ -1,0 +1,15 @@
+[Unit]
+Description=Toko Arafah Kasir Backend (FastAPI)
+After=network.target
+
+[Service]
+Type=simple
+User=tokasrafah
+WorkingDirectory=/opt/tokasrafah
+Environment=PYTHONUNBUFFERED=1
+ExecStart=/opt/tokasrafah/venv/bin/python /opt/tokasrafah/app.py
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target
