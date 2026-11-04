@@ -19,10 +19,19 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
     setState(() => _loading = true);
     try {
       final list = await widget.api.getTransactions();
+      if (!mounted) return;
       setState(() => _tx = list);
+    } catch (e) {
+      if (!mounted) return;
+      _snack('Gagal memuat riwayat: $e');
     } finally {
-      setState(() => _loading = false);
+      if (mounted) setState(() => _loading = false);
     }
+  }
+
+  void _snack(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
   }
 
   @override
@@ -37,25 +46,33 @@ class _TransactionsScreenState extends State<TransactionsScreen> {
       appBar: AppBar(title: const Text('Riwayat'), backgroundColor: AppTheme.primary, foregroundColor: AppTheme.textDark),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
-          : ListView.builder(
-              itemCount: _tx.length,
-              itemBuilder: (ctx, i) {
-                final t = _tx[i];
-                return Card(
-                  child: ExpansionTile(
-                    title: Text('Transaksi #${t.id}'),
-                    subtitle: Text('${t.createdAt}  •  ${formatRupiah(t.total)}'),
-                    children: t.items
-                        .map((e) => ListTile(
-                              title: Text(e.name),
-                              subtitle: Text('${formatRupiah(e.price)} x${e.qty}'),
-                              trailing: Text(formatRupiah(e.price * e.qty)),
-                            ))
-                        .toList(),
-                  ),
-                );
-              },
+          : RefreshIndicator(
+              onRefresh: _load,
+              child: ListView.builder(
+                  itemCount: _tx.length,
+                  itemBuilder: (ctx, i) {
+                    final t = _tx[i];
+                    return Card(
+                      child: ExpansionTile(
+                        title: Text('Transaksi #${t.id}'),
+                        subtitle: Text('${t.createdAt}  •  ${formatRupiah(t.total)}'),
+                        children: t.items
+                            .map((e) => ListTile(
+                                  title: Text(e.name),
+                                  subtitle: Text('${formatRupiah(e.price)} x${e.qty}'),
+                                  trailing: Text(formatRupiah(e.price * e.qty)),
+                                ))
+                            .toList(),
+                      ),
+                    );
+                  },
+                ),
             ),
     );
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
   }
 }
