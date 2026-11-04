@@ -29,6 +29,29 @@ ENV_PATH = BASE_DIR / ".env"
 app = FastAPI(title="Toko Arafah Kasir Backend")
 
 voice_lock = Lock()
+tts_lock = Lock()
+tts_log_path = BASE_DIR / "tts.log"
+last_spoken = {"text": None, "timestamp": None, "method": None}
+
+
+def tts_log(text: str, method: str, detail: str = "") -> None:
+    """Catat setiap permintaan TTS ke file log dengan timestamp."""
+    ts = datetime.now().isoformat()
+    line = f"[{ts}] method={method} text={text!r} detail={detail}\n"
+    try:
+        with tts_lock:
+            with open(tts_log_path, "a", encoding="utf-8") as f:
+                f.write(line)
+    except Exception as exc:
+        logger.warning("Gagal menulis log TTS: %s", exc)
+
+
+def set_last_spoken(text: str, method: str) -> None:
+    """Simpan teks terakhir diucapkan (thread-safe)."""
+    with tts_lock:
+        last_spoken["text"] = text
+        last_spoken["timestamp"] = datetime.now().isoformat()
+        last_spoken["method"] = method
 
 
 def load_env() -> dict:
@@ -600,10 +623,14 @@ def _speak_via_assistant(text: str) -> bool:
         )
         if r.status_code < 400:
             logger.info("TTS via voice-assistant: %s", text)
+            tts_log(text, "voice-assistant", "ok")
+            set_last_spoken(text, "voice-assistant")
             return True
         logger.warning("Voice assistant menolak TTS (%s): %s", r.status_code, r.text[:200])
+        tts_log(text, "voice-assistant", f"rejected {r.status_code} {r.text[:200]}")
     except Exception as exc:
         logger.info("Voice assistant tidak tersedia, fallback TTS lokal: %s", exc)
+        tts_log(text, "voice-assistant", f"error {exc}")
     return False
 
 
@@ -622,6 +649,8 @@ def _speak_once(text: str):
             subprocess.run(cmd, check=True, capture_output=True)
             _play_audio(wav_path)
             os.unlink(wav_path)
+            tts_log(text, "piper", "ok")
+            set_last_spoken(text, "piper")
             return
     except Exception as e:
         logger.warning(f"Piper gagal: {e}")
@@ -633,10 +662,14 @@ def _speak_once(text: str):
             subprocess.run(cmd, check=True, capture_output=True)
             _play_audio(wav_path)
             os.unlink(wav_path)
+            tts_log(text, "espeak-ng", "ok")
+            set_last_spoken(text, "espeak-ng")
             return
     except Exception as e:
         logger.warning(f"espeak-ng gagal: {e}")
     logger.error("Tidak ada TTS backend tersedia")
+    tts_log(text, "none", "no backend available")
+    set_last_spoken(text, "none")
 
 
 def shutil_which(cmd):
@@ -668,6 +701,19 @@ def _play_audio(path: str):
 def speak(inp: SpeakIn):
     speak_queue(inp.text)
     return {"detail": "Suara diantrikan"}
+
+
+@app.get("/tts/test")
+def tts_test():
+    speak_queue("Tes suara TTS Toko Arafah")
+    return {"detail": "TTS tes diantrikan"}
+
+
+@app.get("/tts/status")
+def tts_status():
+    with tts_lock:
+        status = dict(last_spoken)
+    return status
 
 
 @app.post("/announce/item")
