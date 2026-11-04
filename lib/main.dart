@@ -5,6 +5,7 @@ import 'package:tokasrafah_kasir/screens/cashier_screen.dart';
 import 'package:tokasrafah_kasir/screens/products_screen.dart';
 import 'package:tokasrafah_kasir/screens/transactions_screen.dart';
 import 'package:tokasrafah_kasir/screens/settings_screen.dart';
+import 'package:tokasrafah_kasir/screens/splash_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -23,7 +24,7 @@ class TokoArafahApp extends StatelessWidget {
       title: 'Toko Arafah Kasir',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light(),
-      home: HomeShell(api: api),
+      home: SplashScreen(homeScreen: HomeShell(api: api)),
     );
   }
 }

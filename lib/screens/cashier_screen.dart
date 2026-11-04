@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../models/models.dart';
 import '../services/api_service.dart';
+import '../services/receipt_service.dart';
 import '../widgets/cart_widgets.dart';
 import '../theme.dart';
+import 'printer_select_screen.dart';
 
 class CashierScreen extends StatefulWidget {
   final ApiService api;
@@ -20,6 +23,7 @@ class _CashierScreenState extends State<CashierScreen> {
   String? _lastBarcode;
   DateTime _lastScanAt = DateTime.fromMillisecondsSinceEpoch(0);
   final TextEditingController _manualBarcodeController = TextEditingController();
+  Map<String, dynamic>? _lastTransaction;
 
   int get _total => _cart.fold(0, (sum, e) => sum + e.subtotal);
 
@@ -248,12 +252,42 @@ class _CashierScreenState extends State<CashierScreen> {
       final total = result['total'] is int
           ? result['total'] as int
           : int.tryParse(result['total']?.toString() ?? '') ?? 0;
+      final txId = result['transaction_id'] is int
+          ? result['transaction_id'] as int
+          : int.tryParse(result['transaction_id']?.toString() ?? '') ?? 0;
+
+      _lastTransaction = {
+        'transaction_id': txId,
+        'total': total,
+        'created_at': result['created_at'] ?? DateTime.now().toString(),
+        'items': List<Map<String, dynamic>>.from(_cart.map((e) => {
+          'barcode': e.barcode,
+          'name': e.name,
+          'price': e.price,
+          'qty': e.qty,
+        })),
+      };
+
       showDialog(
         context: context,
         builder: (ctx) => AlertDialog(
           title: const Text('Pembayaran Selesai'),
-          content: Text('Total: ${formatRupiah(total)}'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text('Total: ${formatRupiah(total)}'),
+              const SizedBox(height: 12),
+              Text('ID Transaksi: #$txId'),
+            ],
+          ),
           actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(ctx);
+                _showReceiptOptions();
+              },
+              child: const Text('Cetak/Unduh Resi'),
+            ),
             ElevatedButton(
               onPressed: () {
                 Navigator.pop(ctx);
@@ -266,6 +300,119 @@ class _CashierScreenState extends State<CashierScreen> {
       );
     } catch (e) {
       _snack('$e');
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  Future<void> _showReceiptOptions() async {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Resi Transaksi'),
+        content: const Text('Pilih opsi untuk resi transaksi ini:'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Tutup'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(ctx);
+              await _downloadReceipt();
+            },
+            child: const Text('Unduh Resi (PDF)'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(ctx);
+              await _printReceiptBluetooth();
+            },
+            child: const Text('Cetak Bluetooth'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _downloadReceipt() async {
+    if (_lastTransaction == null) return;
+    setState(() => _busy = true);
+    try {
+      final tx = _lastTransaction!;
+      final items = (tx['items'] as List)
+          .map((e) => CartItem(
+                barcode: e['barcode'],
+                name: e['name'],
+                price: e['price'],
+                qty: e['qty'],
+              ))
+          .toList();
+      final pdfBytes = await ReceiptService.generateReceiptPdf(
+        transactionId: tx['transaction_id'],
+        createdAt: DateTime.parse(tx['created_at']),
+        items: items,
+        total: tx['total'],
+      );
+      final fileName = 'resi_${tx['transaction_id']}.pdf';
+      final path = await ReceiptService.saveReceiptToDownloads(
+        pdfBytes: pdfBytes,
+        fileName: fileName,
+      );
+      if (!mounted) return;
+      if (path == null) {
+        _snack('Gagal menyimpan resi: izin penyimpanan tidak diberikan');
+        return;
+      }
+      await ReceiptService.openReceipt(path);
+      _snack('Resi disimpan: $path');
+    } catch (e) {
+      _snack('Gagal unduh resi: $e');
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  Future<void> _printReceiptBluetooth() async {
+    if (_lastTransaction == null) return;
+    final prefs = await SharedPreferences.getInstance();
+    final macAddress = prefs.getString('printer_mac');
+
+    if (macAddress == null || macAddress.isEmpty) {
+      await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (ctx) => PrinterSelectScreen(onPrinterSelected: () {
+            _printReceiptBluetooth();
+          }),
+        ),
+      );
+      return;
+    }
+
+    setState(() => _busy = true);
+    try {
+      final tx = _lastTransaction!;
+      final items = (tx['items'] as List)
+          .map((e) => CartItem(
+                barcode: e['barcode'],
+                name: e['name'],
+                price: e['price'],
+                qty: e['qty'],
+              ))
+          .toList();
+      final success = await ReceiptService.printReceiptBluetooth(
+        macAddress: macAddress,
+        deviceName: 'Printer Tersimpan',
+        transactionId: tx['transaction_id'],
+        createdAt: DateTime.parse(tx['created_at']),
+        items: items,
+        total: tx['total'],
+      );
+      if (!mounted) return;
+      _snack(success ? 'Resi dicetak' : 'Gagal mencetak resi');
+    } catch (e) {
+      _snack('Gagal cetak: $e');
     } finally {
       if (mounted) setState(() => _busy = false);
     }
@@ -294,6 +441,7 @@ class _CashierScreenState extends State<CashierScreen> {
               for (final barcode in capture.barcodes) {
                 final value = barcode.rawValue;
                 if (value != null && value.trim().isNotEmpty) {
+                  setState(() => _scanning = false);
                   _handleBarcode(value);
                   break;
                 }
