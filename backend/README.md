@@ -1,38 +1,133 @@
 # Backend Toko Arafah (FastAPI)
 
-Backend kasir sederhana untuk STB. Data disimpan di SQLite `tokasrafah.db`.
+Backend kasir untuk STB. Data disimpan di SQLite `tokasrafah.db`. Menyediakan API untuk aplikasi kasir Flutter, termasuk pencarian barang, checkout, dan pengumuman suara TTS.
 
 ## Fitur
 
-- `GET /products/{barcode}` — cari barang (mendukung UPC-A 12 digit maupun 13 digit berawalan 0)
-- `POST /products` — tambah barang (JSON: `barcode`, `name`, `price`)
-- `PUT /products/{barcode}` — ubah nama/harga
-- `POST /checkout` — hitung total, simpan transaksi, dan umumkan total lewat speaker
-- `POST /announce/item` — umumkan nama + harga saat barang discan
-- `GET /search/suggest?barcode=...` — saran nama dari Open Food/Beauty/Products Facts dan harga dari Open Prices; kalau tidak ada, memakai estimasi wajar
-- `POST /import/excel` — import `barcode,nama_barang,harga`
+| Endpoint | Metode | Keterangan |
+|----------|--------|------------|
+| `/health` | GET | Cek kesiapan server |
+| `/products/{barcode}` | GET | Cari barang (mendukung UPC-A 12 digit maupun 13 digit berawalan 0) |
+| `/products` | POST | Tambah barang (JSON: `barcode`, `name`, `price`) |
+| `/products/{barcode}` | PUT | Ubah nama/harga barang |
+| `/checkout` | POST | Hitung total, simpan transaksi, umumkan total lewat speaker |
+| `/announce/item` | POST | Umumkan nama + harga saat barang discan |
+| `/search/suggest?barcode=...` | GET | Saran nama dari Open Food/Beauty/Products Facts dan harga dari internet; kalau tidak ada, memakai estimasi wajar |
+| `/import/excel` | POST | Impor `barcode,nama_barang,harga` dari file Excel |
+| `/transactions` | GET | Daftar riwayat transaksi |
+| `/tts/test` | GET | Tes suara TTS |
+| `/tts/status` | GET | Status TTS terakhir (teks, timestamp, metode) |
 
-## Suara
+## Suara TTS
 
-Backend memakai API voice-assistant di `VOICE_ASSISTANT_URL` (default
-`http://127.0.0.1:8090/speak`) supaya suara memakai TTS Indonesia yang sama
-dengan smart speaker. Kalau voice-assistant mati, backend fallback ke Piper
-atau espeak-ng.
+Backend memakai tiga metode TTS (urutan prioritas):
 
-## Import data
+1. **Voice Assistant eksternal** (`VOICE_ASSISTANT_URL`, default `http://127.0.0.1:8090/speak`) — smart speaker lain yang menangani pemutaran suara
+2. **Piper TTS** — offline, suara Indonesia natural (perlu model `.onnx` diunduh secara manual)
+3. **espeak-ng** — fallback bawaan sistem
 
-Data awal berasal dari `InventoryItems.xlsx` (hasil scanner: nama, barcode,
-timestamp). Hanya barcode dengan checksum GS1 valid yang diimpor.
+Setiap permintaan TTS dicatat ke `/opt/tokasrafah/tts.log` dengan timestamp, metode, dan detail. Status terakhir bisa dicek via `GET /tts/status`.
+
+## Import Data
+
+Data awal berasal dari `InventoryItems.xlsx` (hasil scanner: nama, barcode, timestamp). Hanya barcode dengan checksum GS1 valid yang diimpor.
+
+Format template impor (`docs/template_import.xlsx.csv`):
+
+```
+barcode,nama_barang,harga
+8991234567890,Mainan Mobil Anak,50000
+8991234567891,Boneka Beruang,75000
+8991234567892,Set Dapur Mainan,120000
+```
+
+Jalankan impor:
 
 ```bash
 cd /opt/tokasrafah
 ./venv/bin/python import_inventory.py
 ```
 
-Hasil: 14 barang valid masuk, 3 baris dilewati karena bukan barcode ritel /
-checksum tidak valid.
+## Instalasi di STB (Lengkap)
 
-## Menjalankan
+Lihat [`docs/install_stb.sh`](docs/install_stb.sh) untuk skrip instalasi otomatis, atau ikuti langkah manual di bawah:
+
+### 1. Install paket sistem
+
+```bash
+sudo apt-get update
+sudo apt-get install -y python3 python3-pip python3-venv ffmpeg alsa-utils pulseaudio espeak-ng
+```
+
+### 2. Salin backend ke STB
+
+```bash
+APP_DIR=/opt/tokasrafah
+sudo mkdir -p "$APP_DIR"
+sudo cp -r /path/to/backend/* "$APP_DIR/"
+```
+
+### 3. Buat virtualenv dan install dependensi
+
+```bash
+cd /opt/tokasrafah
+python3 -m venv venv
+./venv/bin/pip install -r requirements.txt
+```
+
+### 4. Konfigurasi `.env`
+
+```bash
+cp .env.example .env
+nano .env
+```
+
+Contoh:
+
+```
+PIPER_BIN=piper
+PIPER_MODEL_ID=
+ESPEAK_BIN=espeak-ng
+AUDIO_OUTPUT=default
+ALSA_DEVICE=default
+SEARCH_PROVIDER=none
+SERPAPI_KEY=
+BRAVE_KEY=
+
+VOICE_ASSISTANT_URL=http://127.0.0.1:8090
+```
+
+### 5. Uji coba backend
+
+```bash
+./venv/bin/python app.py
+```
+
+Uji dari terminal lain:
+
+```bash
+curl http://127.0.0.1:8000/health
+curl http://127.0.0.1:8000/tts/test
+tail -n 5 /opt/tokasrafah/tts.log
+```
+
+### 6. Install sebagai service systemd
+
+```bash
+sudo cp docs/tokasrafah.service /etc/systemd/system/tokasrafah.service
+sudo systemctl daemon-reload
+sudo systemctl enable tokasrafah
+sudo systemctl start tokasrafah
+sudo systemctl status tokasrafah
+```
+
+Logs:
+
+```bash
+sudo journalctl -u tokasrafah -f
+```
+
+## Menjalankan Secara Manual (Pengembangan)
 
 ```bash
 python3 -m venv venv
@@ -40,4 +135,25 @@ python3 -m venv venv
 ./venv/bin/python app.py
 ```
 
-Service systemd ada di `docs/tokasrafah.service`.
+Backend akan mendengarkan pada `0.0.0.0:8000`.
+
+## Verifikasi TTS
+
+```bash
+# Tes suara
+curl http://127.0.0.1:8000/tts/test
+
+# Cek status terakhir
+curl http://127.0.0.1:8000/tts/status
+
+# Lihat log semua suara
+tail -n 20 /opt/tokasrafah/tts.log
+```
+
+## Database
+
+File SQLite otomatis dibuat di `/opt/tokasrafah/tokasrafah.db` saat backend pertama kali dijalankan. Tabel:
+- `products` — daftar barang
+- `transactions` — riwayat transaksi
+- `transaction_items` — detail item per transaksi
+- `search_cache` — cache hasil pencarian dari internet
