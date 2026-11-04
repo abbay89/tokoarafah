@@ -1,4 +1,6 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:mobile_scanner/mobile_scanner.dart';
 import '../models/models.dart';
 import '../services/api_service.dart';
 import '../theme.dart';
@@ -51,7 +53,21 @@ class _ProductsScreenState extends State<ProductsScreen> {
               TextField(
                 controller: barcodeController,
                 readOnly: isEdit,
-                decoration: const InputDecoration(labelText: 'Barcode'),
+                decoration: InputDecoration(
+                  labelText: 'Barcode',
+                  suffixIcon: isEdit
+                      ? null
+                      : IconButton(
+                          icon: const Icon(Icons.qr_code_scanner),
+                          tooltip: 'Scan barcode',
+                          onPressed: () async {
+                            final code = await _scanBarcode();
+                            if (code != null && code.isNotEmpty) {
+                              barcodeController.text = code;
+                            }
+                          },
+                        ),
+                ),
               ),
               const SizedBox(height: 12),
               TextField(
@@ -105,6 +121,51 @@ class _ProductsScreenState extends State<ProductsScreen> {
         ],
       ),
     );
+  }
+
+  Future<String?> _scanBarcode() async {
+    final scannerController = MobileScannerController();
+    final completer = Completer<String?>();
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (ctx) => Scaffold(
+        body: Column(
+          children: [
+            Expanded(
+              child: MobileScanner(
+                controller: scannerController,
+                onDetect: (capture) {
+                  final barcodes = capture.barcodes;
+                  final code = barcodes.first.rawValue;
+                  if (code != null && code.trim().isNotEmpty) {
+                    scannerController.dispose();
+                    Navigator.pop(ctx);
+                    completer.complete(code);
+                  }
+                },
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(12),
+              child: Align(
+                alignment: Alignment.centerRight,
+                child: IconButton(
+                  icon: const Icon(Icons.close, color: Colors.white),
+                  onPressed: () {
+                    scannerController.dispose();
+                    Navigator.pop(ctx);
+                    completer.complete(null);
+                  },
+                  tooltip: 'Tutup pemindaian',
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+    return completer.future;
   }
 
   Future<void> _delete(Product product) async {
