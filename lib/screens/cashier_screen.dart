@@ -17,10 +17,20 @@ class CashierScreen extends StatefulWidget {
 class _CashierScreenState extends State<CashierScreen> {
   final List<CartItem> _cart = [];
   bool _scanning = false;
+  bool _processingBarcode = false;
   String _barcodeInput = '';
   final TextEditingController _barcodeController = TextEditingController();
+  final MobileScannerController _scannerController = MobileScannerController();
 
   int get _total => _cart.fold(0, (sum, e) => sum + e.subtotal);
+
+  @override
+  void dispose() {
+    _processingBarcode = false;
+    _scannerController.dispose();
+    _barcodeController.dispose();
+    super.dispose();
+  }
 
   Future<void> _handleBarcode(String barcode) async {
     if (barcode.isEmpty) return;
@@ -141,53 +151,90 @@ class _CashierScreenState extends State<CashierScreen> {
         backgroundColor: AppTheme.primary,
         foregroundColor: AppTheme.textDark,
       ),
-      body: Column(
+      body: Stack(
         children: [
-          Expanded(
-            child: _cart.isEmpty
-                ? const EmptyCart()
-                : ListView.builder(
-                    itemCount: _cart.length,
-                    itemBuilder: (ctx, i) => CartItemTile(
-                      item: _cart[i],
-                      onAdd: () => setState(() => _cart[i].qty++),
-                      onRemove: () => setState(() {
-                        if (_cart[i].qty > 1) _cart[i].qty--;
-                        else _cart.removeAt(i);
-                      }),
-                      onDelete: () => setState(() => _cart.removeAt(i)),
+          Column(
+            children: [
+              Expanded(
+                child: _cart.isEmpty
+                    ? const EmptyCart()
+                    : ListView.builder(
+                        itemCount: _cart.length,
+                        itemBuilder: (ctx, i) => CartItemTile(
+                          item: _cart[i],
+                          onAdd: () => setState(() => _cart[i].qty++),
+                          onRemove: () => setState(() {
+                            if (_cart[i].qty > 1) _cart[i].qty--;
+                            else _cart.removeAt(i);
+                          }),
+                          onDelete: () => setState(() => _cart.removeAt(i)),
+                        ),
+                      ),
+              ),
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppTheme.surface,
+                  boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 4, offset: const Offset(0, -2))],
+                ),
+                child: Column(
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text('Total', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                        Text(formatRupiah(_total), style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: AppTheme.accent)),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: ElevatedButton(
+                            onPressed: _cart.isEmpty ? null : _checkout,
+                            child: const Text('Bayar'),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          if (_scanning)
+            Positioned.fill(
+              child: Column(
+                children: [
+                  Expanded(
+                    child: MobileScanner(
+                      controller: _scannerController,
+                      onDetect: (capture) {
+                        if (_processingBarcode) return;
+                        final List<Barcode> barcodes = capture.barcodes;
+                        final code = barcodes.first.rawValue ?? '';
+                        if (code.isNotEmpty && mounted) {
+                          _processingBarcode = true;
+                          setState(() => _scanning = false);
+                          _handleBarcode(code).then((_) => _processingBarcode = false);
+                        }
+                      },
                     ),
                   ),
-          ),
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: AppTheme.surface,
-              boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 4, offset: const Offset(0, -2))],
-            ),
-            child: Column(
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text('Total', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
-                    Text(formatRupiah(_total), style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: AppTheme.accent)),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Expanded(
-                      child: ElevatedButton(
-                        onPressed: _cart.isEmpty ? null : _checkout,
-                        child: const Text('Bayar'),
+                  Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Align(
+                      alignment: Alignment.centerRight,
+                      child: IconButton(
+                        icon: const Icon(Icons.close, color: Colors.white),
+                        onPressed: () => setState(() => _scanning = false),
+                        tooltip: 'Tutup pemindaian',
                       ),
                     ),
-                  ],
-                ),
-              ],
+                  ),
+                ],
+              ),
             ),
-          ),
         ],
       ),
       floatingActionButton: FloatingActionButton(

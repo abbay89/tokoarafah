@@ -71,8 +71,63 @@ class _ProductsScreenState extends State<ProductsScreen> {
       ),
       floatingActionButton: FloatingActionButton(
         backgroundColor: AppTheme.accent,
-        onPressed: () {},
+        onPressed: _showAddProductDialog,
         child: const Icon(Icons.add),
+      ),
+    );
+  }
+
+  void _showAddProductDialog() {
+    final barcodeController = TextEditingController();
+    final nameController = TextEditingController();
+    final priceController = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Tambah Barang'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: barcodeController,
+              decoration: const InputDecoration(labelText: 'Barcode'),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: nameController,
+              decoration: const InputDecoration(labelText: 'Nama Barang'),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: priceController,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(labelText: 'Harga (Rp)'),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Batal')),
+          ElevatedButton(
+            onPressed: () async {
+              final barcode = barcodeController.text.trim();
+              final name = nameController.text.trim();
+              final price = int.tryParse(priceController.text.trim());
+              if (barcode.isEmpty) return;
+              try {
+                await widget.api.createProduct(barcode, name: name.isEmpty ? null : name, price: price);
+                if (!mounted) return;
+                Navigator.pop(ctx);
+                _load();
+              } catch (e) {
+                if (!mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Gagal tambah barang: $e')),
+                );
+              }
+            },
+            child: const Text('Simpan'),
+          ),
+        ],
       ),
     );
   }
