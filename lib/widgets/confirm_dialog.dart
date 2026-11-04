@@ -27,7 +27,7 @@ class ConfirmDialog extends StatelessWidget {
         TextButton(
           onPressed: () => Navigator.pop(context),
           child: Row(
-            mainSize: MainSize.min,
+            mainAxisSize: MainAxisSize.min,
             children: const [
               Icon(Icons.close, size: 20),
               SizedBox(width: 8),
@@ -43,7 +43,7 @@ class ConfirmDialog extends StatelessWidget {
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
           ),
           child: Row(
-            mainSize: MainSize.min,
+            mainAxisSize: MainAxisSize.min,
             children: [
               const Icon(Icons.delete_outline, size: 20),
               const SizedBox(width: 8),

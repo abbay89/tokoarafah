@@ -112,6 +112,8 @@ class SearchSuggestResult {
   final List<PriceSuggestion> priceSuggestions;
   final int? recommendedPrice;
   final bool cached;
+  final String? source;
+  final bool estimated;
 
   SearchSuggestResult({
     this.barcode,
@@ -119,5 +121,7 @@ class SearchSuggestResult {
     this.priceSuggestions = const [],
     this.recommendedPrice,
     this.cached = false,
+    this.source,
+    this.estimated = false,
   });
 }

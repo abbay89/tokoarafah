@@ -1,17 +1,28 @@
-# tokasrafah_kasir
+# Toko Arafah Kasir
 
-A new Flutter project.
+Aplikasi kasir mainan untuk anak: scan barcode, harga masuk keranjang, lalu
+total belanja diumumkan lewat smart speaker.
 
-## Getting Started
+## Bagian
 
-This project is a starting point for a Flutter application.
+- `lib/` — aplikasi Flutter (kasir, daftar barang, riwayat, pengaturan)
+- `backend/` — backend FastAPI + SQLite untuk STB
+- `docs/` — template import dan service systemd
 
-A few resources to get you started if this is your first Flutter project:
+## Alur
 
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
+1. Scan barcode dengan kamera (atau ketik barcode manual).
+2. Barang yang sudah ada langsung masuk keranjang dan harganya diumumkan.
+3. Barang baru: aplikasi mencari saran nama dari Open Food/Beauty/Products
+   Facts dan saran harga dari internet. Kalau harga tidak ditemukan, dipakai
+   estimasi yang wajar dan bisa diubah.
+4. Tekan **Bayar** — backend menyimpan transaksi dan mengumumkan total.
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+## Build APK
+
+Push ke branch `main` akan menjalankan GitHub Actions
+(`.github/workflows/build.yml`) dan menghasilkan artifact `tokasrafah-apk`.
+
+## Backend
+
+Lihat [`backend/README.md`](backend/README.md).
