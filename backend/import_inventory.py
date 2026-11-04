@@ -12,7 +12,7 @@ import csv
 import sys
 from pathlib import Path
 
-sys.path.insert(0, "/opt/tokasrafah")
+sys.path.insert(0, "/opt/tokoarafah")
 
 import openpyxl
 
@@ -24,8 +24,8 @@ from app import (
     normalize_barcode,
 )
 
-SRC = Path("/opt/tokasrafah/InventoryItems.xlsx")
-OUT_CSV = Path("/opt/tokasrafah/inventory_clean.csv")
+SRC = Path("/opt/tokoarafah/InventoryItems.xlsx")
+OUT_CSV = Path("/opt/tokoarafah/inventory_clean.csv")
 
 # Harga ramah anak/mainan kasiran (Rupiah). Bisa diubah kapan saja dari aplikasi.
 PRICE_MAP = {

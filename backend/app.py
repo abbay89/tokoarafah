@@ -20,10 +20,10 @@ from pydantic import BaseModel
 import uvicorn
 
 logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger("tokasrafah")
+logger = logging.getLogger("tokoarafah")
 
 BASE_DIR = Path(__file__).resolve().parent
-DB_PATH = BASE_DIR / "tokasrafah.db"
+DB_PATH = BASE_DIR / "tokoarafah.db"
 ENV_PATH = BASE_DIR / ".env"
 
 app = FastAPI(title="Toko Arafah Kasir Backend")
@@ -215,7 +215,7 @@ def _http_json(url: str, params: Optional[dict] = None, timeout: float = 8.0):
             url,
             params=params,
             timeout=timeout,
-            headers={"User-Agent": "tokasrafah-kasir/1.0 (toy cashier)"},
+            headers={"User-Agent": "tokoarafah-kasir/1.0 (toy cashier)"},
         )
         if r.status_code == 200:
             return r.json()
@@ -439,7 +439,7 @@ def number_to_id_words(n: int) -> str:
 
 @app.get("/health")
 def health():
-    return {"status": "ok", "service": "tokasrafah"}
+    return {"status": "ok", "service": "tokoarafah"}
 
 
 @app.get("/products/{barcode}", response_model=ProductOut)

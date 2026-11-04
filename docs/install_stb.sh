@@ -17,7 +17,7 @@ cd "$PIPER_MODELS_DIR"
 echo "Model Piper harus diunduh secara manual dan diatur di .env (PIPER_MODEL_ID)"
 
 echo "==> Buat direktori aplikasi"
-APP_DIR=/opt/tokasrafah
+APP_DIR=/opt/tokoarafah
 mkdir -p "$APP_DIR"
 cp -r /vagrant/backend/* "$APP_DIR/" 2>/dev/null || cp -r /mnt/data/backend/* "$APP_DIR/" 2>/dev/null || true
 
@@ -29,7 +29,7 @@ echo "==> Salin .env.example ke .env (isi API key search jika ada)"
 cp "$APP_DIR/.env.example" "$APP_DIR/.env"
 
 echo "==> Buat user sistem (opsional)"
-id tokasrafah 2>/dev/null || useradd -r -s /bin/false tokasrafah
-chown -R tokasrafah:tokasrafah "$APP_DIR"
+id tokoarafah 2>/dev/null || useradd -r -s /bin/false tokoarafah
+chown -R tokoarafah:tokoarafah "$APP_DIR"
 
-echo "==> Selesai. Konfigurasi /etc/systemd/system/tokasrafah.service lalu jalankan:"
+echo "==> Selesai. Konfigurasi /etc/systemd/system/tokoarafah.service lalu jalankan:"

@@ -11,7 +11,7 @@ Sistem kasir untuk Toko Arafah yang terdiri dari:
 ```
 +---------------------+      HTTP JSON      +-----------------------------+
 |  Flutter App (APK)  | <------------------> |  Backend FastAPI (STB)      |
-|  - Scan barcode     |      port 8000      |  - SQLite (tokasrafah.db)   |
+|  - Scan barcode     |      port 8000      |  - SQLite (tokoarafah.db)   |
 |  - Keranjang belanja|                     |  - TTS suara (Piper/espeak)   |
 |  - Checkout & Resi  |                     |  - Voice assistant (opsional) |
 |  - Cetak Bluetooth  |                     +-----------------------------+
@@ -45,7 +45,7 @@ sudo apt-get install -y python3 python3-pip python3-venv ffmpeg alsa-utils pulse
 #### B. Salin backend ke STB
 
 ```bash
-APP_DIR=/opt/tokasrafah
+APP_DIR=/opt/tokoarafah
 sudo mkdir -p "$APP_DIR"
 sudo cp -r /path/to/backend/* "$APP_DIR/"
 ```
@@ -55,7 +55,7 @@ Di sini `/path/to/backend/` adalah folder `backend/` dari repo Git ini (`abbay89
 #### C. Buat virtualenv dan install dependensi
 
 ```bash
-cd /opt/tokasrafah
+cd /opt/tokoarafah
 python3 -m venv venv
 ./venv/bin/pip install -r requirements.txt
 ```
@@ -121,7 +121,7 @@ Backend akan mendengarkan pada `0.0.0.0:8000`. Uji dengan:
 
 ```bash
 curl http://127.0.0.1:8000/health
-# Output: {"status":"ok","service":"tokasrafah"}
+# Output: {"status":"ok","service":"tokoarafah"}
 ```
 
 #### F. Install sebagai service systemd (produksi)
@@ -129,22 +129,22 @@ curl http://127.0.0.1:8000/health
 Salin file service:
 
 ```bash
-sudo cp docs/tokasrafah.service /etc/systemd/system/tokasrafah.service
+sudo cp docs/tokoarafah.service /etc/systemd/system/tokoarafah.service
 sudo systemctl daemon-reload
-sudo systemctl enable tokasrafah
-sudo systemctl start tokasrafah
+sudo systemctl enable tokoarafah
+sudo systemctl start tokoarafah
 ```
 
 Cek status:
 
 ```bash
-sudo systemctl status tokasrafah
+sudo systemctl status tokoarafah
 ```
 
 Logs:
 
 ```bash
-sudo journalctl -u tokasrafah -f
+sudo journalctl -u tokoarafah -f
 ```
 
 ---
@@ -167,7 +167,7 @@ curl http://127.0.0.1:8000/tts/test
 curl http://127.0.0.1:8000/tts/status
 
 # Lihat log semua pemutaran suara
-tail -n 20 /opt/tokasrafah/tts.log
+tail -n 20 /opt/tokoarafah/tts.log
 ```
 
 Setiap transaksi checkout akan otomatis mengumumkan total belanja melalui suara.
@@ -210,7 +210,7 @@ Setelah instalasi pertama kali:
 3. Masukkan **Alamat Server STB**, contoh:
    - `http://100.101.47.117:8000`
    - atau `http://192.168.18.240:8000` (jika di LAN yang sama)
-4. Klik **Tes Koneksi** — harus muncul "Koneksi berhasil: tokasrafah"
+4. Klik **Tes Koneksi** — harus muncul "Koneksi berhasil: tokoarafah"
 
 ---
 
@@ -285,7 +285,7 @@ Alamat printer disimpan otomatis untuk sesi berikutnya.
 - Uji endpoint langsung dari STB: `curl http://127.0.0.1:8000/transactions`
 
 ### Masalah: Suara TTS tidak keluar
-- Cek log: `tail -n 20 /opt/tokasrafah/tts.log`
+- Cek log: `tail -n 20 /opt/tokoarafah/tts.log`
 - Pastikan speaker terhubung dan volume tidak mati
 - Uji manual: `curl http://127.0.0.1:8000/tts/test`
 
@@ -307,7 +307,7 @@ backend/              # Backend FastAPI + SQLite (untuk STB)
   .env.example        # Contoh konfigurasi environment
 docs/                 # Template install STB dan service systemd
   install_stb.sh      # Skrip instalasi otomatis STB
-  tokasrafah.service  # File systemd unit
+  tokoarafah.service  # File systemd unit
   template_import.xlsx.csv  # Contoh format impor barang
 build/                # Hasil build APK (Git LFS)
 ```

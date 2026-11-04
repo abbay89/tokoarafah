@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:tokasrafah_kasir/theme.dart';
+import 'package:tokoarafah_kasir/theme.dart';
 
 class ConfirmDialog extends StatelessWidget {
   final String title;

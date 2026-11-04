@@ -1,6 +1,6 @@
 # Backend Toko Arafah (FastAPI)
 
-Backend kasir untuk STB. Data disimpan di SQLite `tokasrafah.db`. Menyediakan API untuk aplikasi kasir Flutter, termasuk pencarian barang, checkout, dan pengumuman suara TTS.
+Backend kasir untuk STB. Data disimpan di SQLite `tokoarafah.db`. Menyediakan API untuk aplikasi kasir Flutter, termasuk pencarian barang, checkout, dan pengumuman suara TTS.
 
 ## Fitur
 
@@ -26,7 +26,7 @@ Backend memakai tiga metode TTS (urutan prioritas):
 2. **Piper TTS** — offline, suara Indonesia natural (perlu model `.onnx` diunduh secara manual)
 3. **espeak-ng** — fallback bawaan sistem
 
-Setiap permintaan TTS dicatat ke `/opt/tokasrafah/tts.log` dengan timestamp, metode, dan detail. Status terakhir bisa dicek via `GET /tts/status`.
+Setiap permintaan TTS dicatat ke `/opt/tokoarafah/tts.log` dengan timestamp, metode, dan detail. Status terakhir bisa dicek via `GET /tts/status`.
 
 ## Import Data
 
@@ -44,7 +44,7 @@ barcode,nama_barang,harga
 Jalankan impor:
 
 ```bash
-cd /opt/tokasrafah
+cd /opt/tokoarafah
 ./venv/bin/python import_inventory.py
 ```
 
@@ -62,7 +62,7 @@ sudo apt-get install -y python3 python3-pip python3-venv ffmpeg alsa-utils pulse
 ### 2. Salin backend ke STB
 
 ```bash
-APP_DIR=/opt/tokasrafah
+APP_DIR=/opt/tokoarafah
 sudo mkdir -p "$APP_DIR"
 sudo cp -r /path/to/backend/* "$APP_DIR/"
 ```
@@ -70,7 +70,7 @@ sudo cp -r /path/to/backend/* "$APP_DIR/"
 ### 3. Buat virtualenv dan install dependensi
 
 ```bash
-cd /opt/tokasrafah
+cd /opt/tokoarafah
 python3 -m venv venv
 ./venv/bin/pip install -r requirements.txt
 ```
@@ -108,23 +108,23 @@ Uji dari terminal lain:
 ```bash
 curl http://127.0.0.1:8000/health
 curl http://127.0.0.1:8000/tts/test
-tail -n 5 /opt/tokasrafah/tts.log
+tail -n 5 /opt/tokoarafah/tts.log
 ```
 
 ### 6. Install sebagai service systemd
 
 ```bash
-sudo cp docs/tokasrafah.service /etc/systemd/system/tokasrafah.service
+sudo cp docs/tokoarafah.service /etc/systemd/system/tokoarafah.service
 sudo systemctl daemon-reload
-sudo systemctl enable tokasrafah
-sudo systemctl start tokasrafah
-sudo systemctl status tokasrafah
+sudo systemctl enable tokoarafah
+sudo systemctl start tokoarafah
+sudo systemctl status tokoarafah
 ```
 
 Logs:
 
 ```bash
-sudo journalctl -u tokasrafah -f
+sudo journalctl -u tokoarafah -f
 ```
 
 ## Menjalankan Secara Manual (Pengembangan)
@@ -147,12 +147,12 @@ curl http://127.0.0.1:8000/tts/test
 curl http://127.0.0.1:8000/tts/status
 
 # Lihat log semua suara
-tail -n 20 /opt/tokasrafah/tts.log
+tail -n 20 /opt/tokoarafah/tts.log
 ```
 
 ## Database
 
-File SQLite otomatis dibuat di `/opt/tokasrafah/tokasrafah.db` saat backend pertama kali dijalankan. Tabel:
+File SQLite otomatis dibuat di `/opt/tokoarafah/tokoarafah.db` saat backend pertama kali dijalankan. Tabel:
 - `products` — daftar barang
 - `transactions` — riwayat transaksi
 - `transaction_items` — detail item per transaksi

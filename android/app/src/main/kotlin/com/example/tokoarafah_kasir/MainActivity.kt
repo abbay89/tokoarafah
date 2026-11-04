@@ -1,4 +1,4 @@
-package com.example.tokasrafah_kasir
+package com.example.tokoarafah_kasir
 
 import io.flutter.embedding.android.FlutterActivity
 

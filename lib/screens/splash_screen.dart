@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:tokasrafah_kasir/theme.dart';
+import 'package:tokoarafah_kasir/theme.dart';
 
 class SplashScreen extends StatefulWidget {
   final Widget homeScreen;

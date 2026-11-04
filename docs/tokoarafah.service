@@ -4,10 +4,10 @@ After=network.target
 
 [Service]
 Type=simple
-User=tokasrafah
-WorkingDirectory=/opt/tokasrafah
+User=tokoarafah
+WorkingDirectory=/opt/tokoarafah
 Environment=PYTHONUNBUFFERED=1
-ExecStart=/opt/tokasrafah/venv/bin/python /opt/tokasrafah/app.py
+ExecStart=/opt/tokoarafah/venv/bin/python /opt/tokoarafah/app.py
 Restart=always
 RestartSec=3
 

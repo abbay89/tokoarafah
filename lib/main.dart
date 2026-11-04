@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:tokasrafah_kasir/theme.dart';
-import 'package:tokasrafah_kasir/services/api_service.dart';
-import 'package:tokasrafah_kasir/screens/cashier_screen.dart';
-import 'package:tokasrafah_kasir/screens/products_screen.dart';
-import 'package:tokasrafah_kasir/screens/transactions_screen.dart';
-import 'package:tokasrafah_kasir/screens/settings_screen.dart';
-import 'package:tokasrafah_kasir/screens/splash_screen.dart';
+import 'package:tokoarafah_kasir/theme.dart';
+import 'package:tokoarafah_kasir/services/api_service.dart';
+import 'package:tokoarafah_kasir/screens/cashier_screen.dart';
+import 'package:tokoarafah_kasir/screens/products_screen.dart';
+import 'package:tokoarafah_kasir/screens/transactions_screen.dart';
+import 'package:tokoarafah_kasir/screens/settings_screen.dart';
+import 'package:tokoarafah_kasir/screens/splash_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
