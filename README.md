@@ -10,7 +10,7 @@ Sistem kasir untuk Toko Arafah yang terdiri dari:
 
 ```
 +---------------------+      HTTP JSON      +-----------------------------+
-|  Flutter App (APK)  | <------------------> |  Backend FastAPI (STB)      |
+|  Flutter App (APK)  | <------------------> |  Backend FastAPI (STB / Ubuntu Server)  |
 |  - Scan barcode     |      port 8000      |  - SQLite (tokoarafah.db)   |
 |  - Keranjang belanja|                     |  - TTS suara (Piper/espeak)   |
 |  - Checkout & Resi  |                     |  - Voice assistant (opsional) |
@@ -20,29 +20,27 @@ Sistem kasir untuk Toko Arafah yang terdiri dari:
 
 ---
 
-## 1. Instalasi Backend di STB
+## 1. Instalasi Backend (STB / Ubuntu Server)
 
-Backend berjalan di STB (misal: RK3318 Box / Raspberry Pi) dengan IP `100.101.47.117` pada port `8000`.
+Backend bisa dijalankan di dua jenis mesin:
 
-### Persyaratan Sistem
+- **STB** (misal: RK3318 Box / Raspberry Pi / Android TV Box) — biasanya sudah ada speaker bawaan, cocok untuk kasir toko.
+- **Ubuntu Server** — server atau PC yang menjalankan Ubuntu Server, cocok jika ingin menjalankan backend di mesin terpisah dari layar kasir.
 
-- Linux (Debian/Ubuntu/Armbian)
-- Python 3.8+
-- Speaker / audio output untuk TTS
-- Koneksi jaringan (LAN/WiFi)
+Keduanya menggunakan kode yang sama. Bedanya hanya pada pemilihan output audio dan cara mengakses mesin.
 
-### Langkah Instalasi
+### Pilihan A: Instalasi di STB
 
-Masuk ke STB melalui SSH double-hop (pertama ke `imac5@192.168.10.156`, lalu ke `root@100.101.47.117`), atau langsung jika STB terhubung jaringan yang sama.
+Backend berjalan di STB dengan IP `100.101.47.117` pada port `8000`. Akses melalui SSH double-hop (pertama ke `imac5@192.168.10.156`, lalu ke `root@100.101.47.117`), atau langsung jika STB terhubung jaringan yang sama.
 
-#### A. Install paket sistem
+#### A1. Install paket sistem
 
 ```bash
 sudo apt-get update
 sudo apt-get install -y python3 python3-pip python3-venv ffmpeg alsa-utils pulseaudio espeak-ng
 ```
 
-#### B. Salin backend ke STB
+#### A2. Salin backend ke STB
 
 ```bash
 APP_DIR=/opt/tokoarafah
@@ -52,7 +50,7 @@ sudo cp -r /path/to/backend/* "$APP_DIR/"
 
 Di sini `/path/to/backend/` adalah folder `backend/` dari repo Git ini (`abbay89/tokoarafah`).
 
-#### C. Buat virtualenv dan install dependensi
+#### A3. Buat virtualenv dan install dependensi
 
 ```bash
 cd /opt/tokoarafah
@@ -60,7 +58,7 @@ python3 -m venv venv
 ./venv/bin/pip install -r requirements.txt
 ```
 
-#### D. Konfigurasi `.env`
+#### A4. Konfigurasi `.env`
 
 Salin contoh file dan sesuaikan:
 
@@ -69,7 +67,7 @@ cp .env.example .env
 nano .env
 ```
 
-Contoh isi `.env`:
+Contoh isi `.env` untuk STB:
 
 ```
 PIPER_BIN=piper
@@ -84,18 +82,7 @@ BRAVE_KEY=
 VOICE_ASSISTANT_URL=http://127.0.0.1:8090
 ```
 
-| Variabel | Keterangan |
-|----------|------------|
-| `PIPER_BIN` | Path binary Piper TTS (jika terinstall) |
-| `PIPER_MODEL_ID` | Path ke model suara Indonesia Piper |
-| `ESPEAK_BIN` | Binary espeak-ng (fallback TTS) |
-| `AUDIO_OUTPUT` | Nama output audio (default/pulse/alsa) |
-| `ALSA_DEVICE` | Perangkat ALSA untuk audio |
-| `SEARCH_PROVIDER` | `none`, `serpapi`, atau `brave` untuk pencarian harga internet |
-| `SERPAPI_KEY` / `BRAVE_KEY` | API key untuk pencarian harga |
-| `VOICE_ASSISTANT_URL` | URL voice-assistant eksternal (default `http://127.0.0.1:8090/speak`) |
-
-#### E. Import data barang awal
+#### A5. Import data barang awal
 
 Jika ada file inventory (Excel/CSV), impor ke database:
 
@@ -111,7 +98,7 @@ barcode,nama_barang,harga
 8991234567891,Boneka Beruang,75000
 ```
 
-#### E. Jalankan backend secara manual (uji coba)
+#### A6. Jalankan backend secara manual (uji coba)
 
 ```bash
 ./venv/bin/python app.py
@@ -124,9 +111,7 @@ curl http://127.0.0.1:8000/health
 # Output: {"status":"ok","service":"tokoarafah"}
 ```
 
-#### F. Install sebagai service systemd (produksi)
-
-Salin file service:
+#### A7. Install sebagai service systemd (produksi)
 
 ```bash
 sudo cp docs/tokoarafah.service /etc/systemd/system/tokoarafah.service
@@ -149,28 +134,195 @@ sudo journalctl -u tokoarafah -f
 
 ---
 
-## 2. Konfigurasi Suara TTS
+### Pilihan B: Instalasi di Ubuntu Server
+
+Jika menggunakan Ubuntu Server (misal: VPS, mini PC, atau PC lama yang dipakai sebagai server backend):
+
+#### B1. Install paket sistem
+
+```bash
+sudo apt-get update
+sudo apt-get install -y python3 python3-pip python3-venv ffmpeg alsa-utils pulseaudio espeak-ng
+```
+
+#### B2. Clone repo dan masuk ke folder backend
+
+```bash
+git clone https://github.com/abbay89/tokoarafah.git
+cd tokoarafah/backend
+```
+
+#### B3. Buat virtualenv dan install dependensi
+
+```bash
+python3 -m venv venv
+./venv/bin/pip install -r requirements.txt
+```
+
+#### B4. Konfigurasi `.env`
+
+```bash
+cp .env.example .env
+nano .env
+```
+
+Contoh isi `.env` untuk Ubuntu Server (ubah `100.101.47.117` menjadi IP server Anda):
+
+```
+PIPER_BIN=piper
+PIPER_MODEL_ID=
+ESPEAK_BIN=espeak-ng
+AUDIO_OUTPUT=default
+ALSA_DEVICE=default
+SEARCH_PROVIDER=none
+SERPAPI_KEY=
+BRAVE_KEY=
+
+VOICE_ASSISTANT_URL=http://127.0.0.1:8090
+```
+
+#### B5. Jalankan backend
+
+```bash
+./venv/bin/python app.py
+```
+
+Backend akan mendengarkan pada `0.0.0.0:8000`. Pastikan firewall membuka port 8000:
+
+```bash
+sudo ufw allow 8000/tcp
+```
+
+Uji dari mesin lain di jaringan yang sama:
+
+```bash
+curl http://<IP-UBUNTU-SERVER>:8000/health
+```
+
+---
+
+---
+
+## 2. Konfigurasi Suara TTS (Text-to-Speech)
 
 Backend mendukung tiga metode TTS (urutan prioritas):
 
-1. **Voice Assistant eksternal** (`VOICE_ASSISTANT_URL`) — smart speaker lain yang menanggani `/speak`
-2. **Piper TTS** — offline, suara Indonesia natural (perlu model `.onnx`)
-3. **espeak-ng** — fallback bawaan sistem
+1. **Voice Assistant eksternal** (`VOICE_ASSISTANT_URL`) — smart speaker lain yang menangani pemutaran suara melalui endpoint `/speak`
+2. **Piper TTS** — offline, suara Indonesia natural, cocok untuk STB tanpa koneksi internet (perlu model `.onnx`)
+3. **espeak-ng** — fallback bawaan sistem, suara lebih robotis tapi tidak perlu unduh model tambahan
 
-Verifikasi suara TTS:
+Setiap permintaan TTS dicatat ke `/opt/tokoarafah/tts.log` dengan timestamp, metode, dan detail. Status terakhir bisa dicek via `GET /tts/status`.
+
+### Opsi 1: Piper TTS (disarankan untuk STB)
+
+Piper menghasilkan suara yang lebih natural dan bisa berjalan offline. Langkah instalasi:
+
+#### A. Install Piper
 
 ```bash
-# Dari STB itu sendiri
+pip3 install piper-tts
+```
+
+Atau unduh binary Piper dari [github.com/rhasspy/piper](https://github.com/rhasspy/piper).
+
+#### B. Unduh model suara Indonesia
+
+Cari model Bahasa Indonesia di repositori Piper, lalu unduh file `.onnx` dan file `.onnx.json`:
+
+```bash
+PIPER_MODELS_DIR=/opt/piper_models
+mkdir -p "$PIPER_MODELS_DIR"
+cd "$PIPER_MODELS_DIR"
+
+# Contoh (ganti dengan URL model Indonesia yang sebenarnya):
+# wget https://github.com/rhasspy/piper/releases/download/.../id_ID-vits.onnx
+# wget https://github.com/rhasspy/piper/releases/download/.../id_ID-vits.onnx.json
+```
+
+Catat path lengkap file `.onnx`, misal: `/opt/piper_models/id_ID-vits.onnx`.
+
+#### C. Konfigurasi `.env`
+
+```bash
+nano /opt/tokoarafah/.env
+```
+
+Isi:
+
+```
+PIPER_BIN=/opt/tokoarafah/venv/bin/piper
+PIPER_MODEL_ID=/opt/piper_models/id_ID-vits.onnx
+ESPEAK_BIN=espeak-ng
+AUDIO_OUTPUT=default
+ALSA_DEVICE=default
+```
+
+#### D. Restart backend
+
+```bash
+sudo systemctl restart tokoarafah
+```
+
+#### E. Uji suara Piper
+
+```bash
+curl http://127.0.0.1:8000/tts/test
+tail -n 5 /opt/tokoarafah/tts.log
+# Harus menampilkan: method=piper detail=ok
+```
+
+### Opsi 2: espeak-ng (fallback, tidak perlu unduh model)
+
+espeak-ng biasanya sudah terinstall setelah `apt-get install espeak-ng`. Konfigurasi `.env`:
+
+```
+PIPER_BIN=
+PIPER_MODEL_ID=
+ESPEAK_BIN=espeak-ng
+AUDIO_OUTPUT=default
+ALSA_DEVICE=default
+```
+
+Restart backend dan uji:
+
+```bash
+sudo systemctl restart tokoarafah
+curl http://127.0.0.1:8000/tts/test
+```
+
+### Opsi 3: Voice Assistant eksternal
+
+Jika ada smart speaker atau mesin lain yang menyediakan endpoint TTS, isi `VOICE_ASSISTANT_URL`:
+
+```
+VOICE_ASSISTANT_URL=http://<IP-VOICE-ASSISTANT>:8090/speak
+```
+
+Backend akan mencoba mengirim teks ke URL tersebut. Jika gagal, akan fallback ke Piper atau espeak-ng.
+
+### Verifikasi Suara TTS
+
+```bash
+# Dari STB / Ubuntu Server itu sendiri
 curl http://127.0.0.1:8000/tts/test
 
-# Cek status terakhir
+# Cek status terakhir (teks, timestamp, metode)
 curl http://127.0.0.1:8000/tts/status
 
 # Lihat log semua pemutaran suara
 tail -n 20 /opt/tokoarafah/tts.log
 ```
 
+Contoh output `tts.log`:
+
+```
+[2026-11-04T11:22:19.645599] method=voice-assistant text='Total belanja tiga puluh tiga ribu lima ratus rupiah' detail=ok
+[2026-11-04T11:22:13.463053] method=piper text='Pomade Hitam, harga dua puluh tiga ribu rupiah' detail=ok
+```
+
 Setiap transaksi checkout akan otomatis mengumumkan total belanja melalui suara.
+
+Setiap barang yang discan juga akan diumumkan namanya dan harganya.
 
 ---
 
@@ -285,14 +437,25 @@ Alamat printer disimpan otomatis untuk sesi berikutnya.
 - Uji endpoint langsung dari STB: `curl http://127.0.0.1:8000/transactions`
 
 ### Masalah: Suara TTS tidak keluar
+
+**Untuk STB:**
 - Cek log: `tail -n 20 /opt/tokoarafah/tts.log`
 - Pastikan speaker terhubung dan volume tidak mati
 - Uji manual: `curl http://127.0.0.1:8000/tts/test`
+- Pastikan `PIPER_MODEL_ID` menunjuk ke file `.onnx` yang valid (jika menggunakan Piper)
+- Pastikan `espeak-ng` terinstall: `which espeak-ng`
+
+**Untuk Ubuntu Server (tanpa speaker bawaan):**
+- Ubuntu Server biasanya tidak memiliki audio hardware. Pasang speaker USB atau gunakan output HDMI.
+- Cek perangkat audio: `aplay -l` atau `pactl list sinks`
+- Jika tidak ada perangkat audio, gunakan opsi **Voice Assistant eksternal** (kirim TTS ke smart speaker lain) atau instal di STB yang memiliki speaker.
+- Uji output audio: `aplay /usr/share/sounds/alsa/Front_Center.wav`
 
 ### Masalah: Aplikasi tidak bisa konek ke server
-- Pastikan STB menyala dan port 8000 terbuka: `ss -tlnp | grep 8000`
+- Pastikan STB / Ubuntu Server menyala dan port 8000 terbuka: `ss -tlnp | grep 8000`
 - Pastikan URL di pengaturan aplikasi menggunakan IP yang bisa dijangkau dari Android
-- Jika menggunakan WiFi, pastikan Android dan STB di jaringan yang sama
+- Jika menggunakan Ubuntu Server, pastikan firewall membuka port 8000: `sudo ufw allow 8000/tcp`
+- Jika menggunakan WiFi, pastikan Android dan server di jaringan yang sama
 
 ---
 
@@ -300,12 +463,12 @@ Alamat printer disimpan otomatis untuk sesi berikutnya.
 
 ```
 lib/                  # Kode Flutter (UI, model, service API)
-backend/              # Backend FastAPI + SQLite (untuk STB)
+backend/              # Backend FastAPI + SQLite (untuk STB / Ubuntu Server)
   app.py              # Aplikasi backend utama
   import_inventory.py # Skrip impor barang
   requirements.txt    # Dependensi Python
   .env.example        # Contoh konfigurasi environment
-docs/                 # Template install STB dan service systemd
+docs/                 # Template install STB / Ubuntu Server dan service systemd
   install_stb.sh      # Skrip instalasi otomatis STB
   tokoarafah.service  # File systemd unit
   template_import.xlsx.csv  # Contoh format impor barang
